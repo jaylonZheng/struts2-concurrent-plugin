@@ -7,7 +7,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.struts2.ServletActionContext;
 import org.apache.struts2.dispatcher.StrutsResultSupport;
 import org.le.Exception.PipeActionAnnotationException;
-import org.le.Exception.PipeDowngradeInitException;
+import org.le.Exception.PipeParamInitException;
 import org.le.anno.ExecuteType;
 import org.le.anno.View;
 import org.le.anno.Weight;
@@ -17,6 +17,8 @@ import org.le.core.*;
 import org.le.core.executor.BigPipeExecutor;
 import org.le.core.executor.ConcurrentPipeExecutor;
 import org.le.core.executor.SyncPipeExecutor;
+import org.le.core.extention.downgrade.PipeBackup;
+import org.le.core.extention.downgrade.PipeCache;
 import org.le.core.extention.downgrade.PipeDowngrade;
 import org.le.core.factory.DefaultPipeFactory;
 import org.le.core.factory.PipeFactory;
@@ -55,17 +57,21 @@ public class BigPipeResult extends StrutsResultSupport {
 
     @Inject(value = "struts.concurrent.plugin.downgrade")
     private String downgrade;
+    @Inject(value = "struts.concurrent.plugin.backup")
+    private String backup;
+    @Inject(value = "struts.concurrent.plugin.cache")
+    private String cache;
     @Inject(value = "struts.devMode")
     private String devMode;
-    private static boolean hasInitDowngrade = false;
+    private static boolean hasInitParams = false;
     private Object action;
     private MultiBitSet pipesWeight;
     private Map<String, Weight> pipeKeyWeightMap;
 
     @Override
     protected void doExecute(String finalLocation, ActionInvocation invocation) throws Exception {
-        initDowngrade();
-        initDevMode();
+        initParams();
+
         this.action = invocation.getAction();
         List<String> pipeClazzs = pipesParse.getPipes(finalLocation);
         List<PipeProxy> pipes = pipeFactory.create(pipeClazzs, invocation);
@@ -103,14 +109,46 @@ public class BigPipeResult extends StrutsResultSupport {
         }
     }
 
-    private void initDowngrade() {
-        if (!hasInitDowngrade && StringUtils.isNotEmpty(downgrade)) {
+    private void initParams() {
+        initDowngradeParam();
+        initBackupParam();
+        initCacheParam();
+        initDevMode();
+        hasInitParams = true;
+    }
+
+    private void initDowngradeParam() {
+        if (!hasInitParams && StringUtils.isNotEmpty(downgrade)) {
             try {
                 Class pipeDowngradeClass = Class.forName(downgrade);
                 PipeDowngrade pipeDowngradeBackup = (PipeDowngrade) pipeDowngradeClass.newInstance();
                 ((SyncPipeExecutor) syncPipeExecutor).setDowngrade(pipeDowngradeBackup);
             } catch (Exception e) {
-                throw new PipeDowngradeInitException("init pipe downgrade object error!");
+                throw new PipeParamInitException("init pipe downgrade object error!");
+            }
+        }
+    }
+
+    private void initBackupParam() {
+        if (!hasInitParams && StringUtils.isNotEmpty(backup)) {
+            try {
+                Class clazz = Class.forName(backup);
+                PipeBackup pipeBackup = (PipeBackup) clazz.newInstance();
+                ((SyncPipeExecutor) syncPipeExecutor).setBackup(pipeBackup);
+            } catch (Exception e) {
+                throw new PipeParamInitException("init pipe downgrade object error!");
+            }
+        }
+    }
+
+    private void initCacheParam() {
+        if (!hasInitParams && StringUtils.isNotEmpty(cache)) {
+            try {
+                Class clazz = Class.forName(cache);
+                PipeCache pipeCache = (PipeCache) clazz.newInstance();
+                ((SyncPipeExecutor) syncPipeExecutor).setCache(pipeCache);
+            } catch (Exception e) {
+                throw new PipeParamInitException("init pipe downgrade object error!");
             }
         }
     }

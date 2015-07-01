@@ -2,9 +2,11 @@ package org.le.core.extention.downgrade;
 
 import org.le.bean.PipeProxy;
 
-public interface PipeDowngrade {
-
-    void backup(PipeProxy pipe, Object pipeResult);
+/**
+ * 模块降级接口
+ * 当模块渲染抛出异常时，会回调此接口
+ */
+public interface PipeDowngrade{
 
     Object downgrade(PipeProxy pipe);
 }
