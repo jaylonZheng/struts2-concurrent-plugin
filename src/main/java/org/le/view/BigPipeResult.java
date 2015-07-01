@@ -63,15 +63,15 @@ public class BigPipeResult extends StrutsResultSupport {
     private String cache;
     @Inject(value = "struts.devMode")
     private String devMode;
-    private static boolean hasInitParams = false;
+    private static volatile boolean hasInitParams = false;
     private Object action;
     private MultiBitSet pipesWeight;
     private Map<String, Weight> pipeKeyWeightMap;
 
     @Override
     protected void doExecute(String finalLocation, ActionInvocation invocation) throws Exception {
-        initParams();
-
+        if (!hasInitParams)
+            initParams();
         this.action = invocation.getAction();
         List<String> pipeClazzs = pipesParse.getPipes(finalLocation);
         List<PipeProxy> pipes = pipeFactory.create(pipeClazzs, invocation);
@@ -109,7 +109,10 @@ public class BigPipeResult extends StrutsResultSupport {
         }
     }
 
-    private void initParams() {
+    private synchronized void initParams() {
+        //double check
+        if(hasInitParams)
+            return;
         initDowngradeParam();
         initBackupParam();
         initCacheParam();
@@ -118,7 +121,7 @@ public class BigPipeResult extends StrutsResultSupport {
     }
 
     private void initDowngradeParam() {
-        if (!hasInitParams && StringUtils.isNotEmpty(downgrade)) {
+        if (StringUtils.isNotEmpty(downgrade)) {
             try {
                 Class pipeDowngradeClass = Class.forName(downgrade);
                 PipeDowngrade pipeDowngradeBackup = (PipeDowngrade) pipeDowngradeClass.newInstance();
@@ -130,25 +133,25 @@ public class BigPipeResult extends StrutsResultSupport {
     }
 
     private void initBackupParam() {
-        if (!hasInitParams && StringUtils.isNotEmpty(backup)) {
+        if (StringUtils.isNotEmpty(backup)) {
             try {
                 Class clazz = Class.forName(backup);
                 PipeBackup pipeBackup = (PipeBackup) clazz.newInstance();
                 ((SyncPipeExecutor) syncPipeExecutor).setBackup(pipeBackup);
             } catch (Exception e) {
-                throw new PipeParamInitException("init pipe downgrade object error!");
+                throw new PipeParamInitException("init pipe backup object error!");
             }
         }
     }
 
     private void initCacheParam() {
-        if (!hasInitParams && StringUtils.isNotEmpty(cache)) {
+        if (StringUtils.isNotEmpty(cache)) {
             try {
                 Class clazz = Class.forName(cache);
                 PipeCache pipeCache = (PipeCache) clazz.newInstance();
                 ((SyncPipeExecutor) syncPipeExecutor).setCache(pipeCache);
             } catch (Exception e) {
-                throw new PipeParamInitException("init pipe downgrade object error!");
+                throw new PipeParamInitException("init pipe cache object error!");
             }
         }
     }
