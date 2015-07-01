@@ -4,9 +4,9 @@ import org.le.bean.PipeProxy;
 import org.le.core.DefaultFreemarkerRenderer;
 import org.le.core.FreemarkerRenderer;
 import org.le.core.PipeExecutor;
-import org.le.core.extention.downgrade.PipeBackup;
-import org.le.core.extention.downgrade.PipeCache;
-import org.le.core.extention.downgrade.PipeDowngrade;
+import org.le.core.extention.PipeBackup;
+import org.le.core.extention.PipeCache;
+import org.le.core.extention.PipeDowngrade;
 import org.le.util.InjectUtils;
 
 import java.util.HashMap;
