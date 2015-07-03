@@ -1,5 +1,7 @@
 package org.le.core.executor;
 
+import org.apache.commons.lang3.StringUtils;
+import org.le.Exception.PipeParamInitException;
 import org.le.bean.PipeProxy;
 import org.le.core.DefaultFreemarkerRenderer;
 import org.le.core.FreemarkerRenderer;
@@ -8,7 +10,11 @@ import org.le.core.extention.PipeBackup;
 import org.le.core.extention.PipeCache;
 import org.le.core.extention.PipeDowngrade;
 import org.le.util.InjectUtils;
+import org.le.util.YamlConfig;
 
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -17,10 +23,55 @@ public class SyncPipeExecutor implements PipeExecutor {
 
     private static SyncPipeExecutor instance = new SyncPipeExecutor();
     private FreemarkerRenderer renderer = DefaultFreemarkerRenderer.newIntance();
-    private PipeDowngrade downgrade;
-    private PipeBackup backup;
-    private PipeCache cache;
+    private static PipeDowngrade downgrade;
+    private static PipeBackup backup;
+    private static PipeCache cache;
     private boolean devMode;
+
+    //初始化参数
+    static {
+        try {
+            initDowngradeParam(YamlConfig.getAsString("downgrade"));
+            initCacheParam(YamlConfig.getAsString("cache"));
+            initBackupParam(YamlConfig.getAsString("backup"));
+        }catch (Exception e){
+            e.printStackTrace();
+            throw new RuntimeException("init params error.please make sure has a config " +
+                    "file named 【pipe.config】and put it at root resources dirctory");
+        }
+    }
+    private static void initDowngradeParam(String downgradeClassName) {
+        if (StringUtils.isNotEmpty(downgradeClassName)) {
+            try {
+                Class pipeDowngradeClass = Class.forName(downgradeClassName);
+                downgrade = (PipeDowngrade) pipeDowngradeClass.newInstance();
+            } catch (Exception e) {
+                throw new PipeParamInitException("init pipe downgrade object error!");
+            }
+        }
+    }
+
+    private static void initBackupParam(String backupClassName) {
+        if (StringUtils.isNotEmpty(backupClassName)) {
+            try {
+                Class clazz = Class.forName(backupClassName);
+                backup = (PipeBackup) clazz.newInstance();
+            } catch (Exception e) {
+                throw new PipeParamInitException("init pipe backup object error!");
+            }
+        }
+    }
+
+    private static void initCacheParam(String cacheClassName) {
+        if (StringUtils.isNotEmpty(cacheClassName)) {
+            try {
+                Class clazz = Class.forName(cacheClassName);
+                cache = (PipeCache) clazz.newInstance();
+            } catch (Exception e) {
+                throw new PipeParamInitException("init pipe cache object error!");
+            }
+        }
+    }
 
     private SyncPipeExecutor() {
     }
