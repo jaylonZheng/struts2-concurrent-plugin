@@ -1,6 +1,5 @@
 package org.le.core.executor;
 
-import org.apache.commons.lang3.StringUtils;
 import org.le.Exception.PipeParamInitException;
 import org.le.bean.PipeProxy;
 import org.le.core.DefaultFreemarkerRenderer;
@@ -11,10 +10,8 @@ import org.le.core.extention.PipeCache;
 import org.le.core.extention.PipeDowngrade;
 import org.le.util.InjectUtils;
 import org.le.util.YamlConfig;
-
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
+import org.springframework.util.CollectionUtils;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -31,42 +28,34 @@ public class SyncPipeExecutor implements PipeExecutor {
     //初始化参数
     static {
         try {
-            initDowngradeParam(YamlConfig.getAsString("downgrade"));
-            initCacheParam(YamlConfig.getAsString("cache"));
-            initBackupParam(YamlConfig.getAsString("backup"));
-        }catch (Exception e){
+            Map<String, String> extenInfo = new HashMap<String, String>();
+            List<String> extenKeys = Arrays.asList("downgrade", "cache", "backup");
+            for(String key: extenKeys){
+                extenInfo.put(key, YamlConfig.getAsString(key));
+            }
+            initExtentionParam(extenInfo);
+        } catch (Exception e) {
             e.printStackTrace();
             throw new RuntimeException("init params error.please make sure has a config " +
                     "file named 【pipe.config】and put it at root resources dirctory");
         }
     }
-    private static void initDowngradeParam(String downgradeClassName) {
-        if (StringUtils.isNotEmpty(downgradeClassName)) {
-            try {
-                Class pipeDowngradeClass = Class.forName(downgradeClassName);
-                downgrade = (PipeDowngrade) pipeDowngradeClass.newInstance();
-            } catch (Exception e) {
-                throw new PipeParamInitException("init pipe downgrade object error!");
-            }
-        }
-    }
 
-    private static void initBackupParam(String backupClassName) {
-        if (StringUtils.isNotEmpty(backupClassName)) {
-            try {
-                Class clazz = Class.forName(backupClassName);
-                backup = (PipeBackup) clazz.newInstance();
-            } catch (Exception e) {
-                throw new PipeParamInitException("init pipe backup object error!");
-            }
+    private static void initExtentionParam(Map<String, String> classNames) {
+        if (CollectionUtils.isEmpty(classNames)) {
+            return;
         }
-    }
-
-    private static void initCacheParam(String cacheClassName) {
-        if (StringUtils.isNotEmpty(cacheClassName)) {
+        for (String extenType : classNames.keySet()) {
             try {
-                Class clazz = Class.forName(cacheClassName);
-                cache = (PipeCache) clazz.newInstance();
+                Class clazz = Class.forName(classNames.get(extenType));
+                if ("downgrade".equals(extenType)) {
+                    downgrade = (PipeDowngrade) clazz.newInstance();
+                } else if ("cache".equals(extenType)) {
+                    cache = (PipeCache) clazz.newInstance();
+                } else if ("backup".equals(extenType)) {
+                    backup = (PipeBackup) clazz.newInstance();
+                }
+
             } catch (Exception e) {
                 throw new PipeParamInitException("init pipe cache object error!");
             }
@@ -129,7 +118,7 @@ public class SyncPipeExecutor implements PipeExecutor {
             backup.backup(pipe, renderResult);
     }
 
-    private Object render(PipeProxy pipe){
+    private Object render(PipeProxy pipe) {
         Map<String, Object> context = InjectUtils.getFieldValueForFreemarker(pipe.getPipe());
         String ftl = pipe.getFtl();
         return renderer.render(ftl, context);
