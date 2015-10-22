@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en-us">
+  <head>
+    <meta charset="UTF-8">
+    <title>Struts2-concurrent-plugin by lepdou</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" type="text/css" href="stylesheets/normalize.css" media="screen">
+    <link href='https://fonts.googleapis.com/css?family=Open+Sans:400,700' rel='stylesheet' type='text/css'>
+    <link rel="stylesheet" type="text/css" href="stylesheets/stylesheet.css" media="screen">
+    <link rel="stylesheet" type="text/css" href="stylesheets/github-light.css" media="screen">
+  </head>
+  <body>
+    <section class="page-header">
+      <h1 class="project-name">Struts2-concurrent-plugin</h1>
+      <h2 class="project-tagline">struts2 plugin for bigpipe and pagelet concurrent</h2>
+      <a href="https://github.com/lepdou/struts2-concurrent-plugin" class="btn">View on GitHub</a>
+      <a href="https://github.com/lepdou/struts2-concurrent-plugin/zipball/master" class="btn">Download .zip</a>
+      <a href="https://github.com/lepdou/struts2-concurrent-plugin/tarball/master" class="btn">Download .tar.gz</a>
+    </section>
+
+    <section class="main-content">
+      <h2>
+<a id="struts2-concurrent-plugin" class="anchor" href="#struts2-concurrent-plugin" aria-hidden="true"><span class="octicon octicon-link"></span></a>struts2-concurrent-plugin</h2>
+
+<h3>
+<a id="简介" class="anchor" href="#%E7%AE%80%E4%BB%8B" aria-hidden="true"><span class="octicon octicon-link"></span></a>简介</h3>
+
+<hr>
+
+<p>struts2-bigpipe-plugin是struts2的一款插件，插件功能是把一个页面分成很多个模块。每个模块执行业务代码并渲染有三种模式:
+    </p><ul>
+        <li>串行模式
+        </li>
+<li>服务器端并行模式
+        </li>
+<li>bigpipe模式
+    </li>
+</ul>
+    <hr>
+    <b>下面具体介绍一下每个模式</b>
+    <p>
+        1.串行模式是每个模块顺序执行
+    </p>
+    <p>
+      2.服务器端并行模式是每个模块并行执行（多线程），当所有的模块执行完之后拼成一个完整的html后再响应给客户端浏览器。
+    </p>
+    <p>
+        3.bigpipe模式是facebook发明的一种浏览器-服务器之间的并发模式。跟服务器端并行模式一样，bigpipe模式也是模块并行执行，不同的是，bigpipe模式在每个模块执行完之后，马上给客户端浏览器响应。好处在于客户端能够立刻看到响应，提升用户体验。这个过程让我们不经想到Ajax，跟ajax区别在于bigpipe只有一个连接，一方面能够节约服务器连接资源，另一方面节省tcp连接的时间。
+    </p>
+
+<h3>
+<a id="使用文档" class="anchor" href="#%E4%BD%BF%E7%94%A8%E6%96%87%E6%A1%A3" aria-hidden="true"><span class="octicon octicon-link"></span></a>使用文档</h3>
+
+<hr>
+
+<p><b>1.增加插件pom依赖，或者手动导入插件包</b>
+<b>2.编写普通的struts2 Action组件</b></p>
+
+<p>
+    在插件的模型里面，action组件不再是执行业务逻辑代码的地方，理论上只用于为每个子模块创建参数上下文。具体执行业务逻辑由Pipe组件完成。
+</p>
+
+<pre>
+<code>
+    @View(ftlPath = "/index.ftl", type = ExecuteType.BIGPIPE)
+public class IndexAction extends ActionSupport {
+
+    @Param
+    String name;
+    @Autowired
+    @Param
+    public User user;
+
+    @Override
+    public String execute() throws Exception {
+    //do prepare pipe execute context at here
+        return "pipe";
+    }
+</code>
+    </pre>
+
+<p>
+    <b><a href="https://github.com/View" class="user-mention">@View</a></b> 注释是插件里面的一个重要注释，在Action组件里面<a href="https://github.com/View" class="user-mention">@View</a>的功能有两个：<br>
+    1.指定对应的页面的整体freemarker文件路径
+    2.指定此页面的模块的执行方式，枚举类型ExecuteType.SYNC、ExecuteType.CONCURRENT、ExecuteType.BIGPIPE分别对应上一节介绍的三种模式.模式切换只有这里需要改动，其他地方无需任何改动.
+</p>
+
+<p>
+    <b><a href="https://github.com/Param" class="user-mention">@Param</a></b> 指定的属性表示此参数会被此页面模块使用的到，也就是说会被注入到模块里相应的属性里。
+</p>
+
+<p>
+其他地方和普通的struts2 action没有任何区别。
+</p>
+
+<p><br>
+<b>3.编写模块组件</b></p>
+
+<p>示例</p><p>
+</p><pre><code>
+@View(ftlPath = "demo/one.ftl", weight = Weight.HEIGHT, key = "pipeone")
+public class PipeOne implements Pipe {
+    @Param
+    private String name;
+    @Getter
+    @Autowired
+    private User user;
+    @Getter
+    private int age;
+    @Getter
+    private int time;
+    @Override
+    public void execute() {
+        //do business logic at here
+    }
+}
+</code></pre>
+
+<p>示例说明</p><p>
+</p><p>Pipe组件对应页面的一个模块，Pipe组件需要实现Pipe接口。Pipe接口定义只有一个execute()方法。</p>
+<p>
+    <b><a href="https://github.com/View" class="user-mention">@View</a></b> 注释有三个功能<br>
+    </p><ul>
+        <li>指定freemarker文件地址
+        </li>
+<li>指定在页面级freemarker中引用模块的key，默认是ftl文件名（不包括后缀）。例如上面示例中的模块key为one
+        </li>
+<li>指定此模块的权重。这里解释一下权重的概念：一个页面可能某些模块具有高权重，比如base info信息在整个页面必须首先渲染出来，而有些模块得在页面其他部分都渲染完之后在渲染也就是优先级是最低的。插件实现了三种优先级Weight.HEIGHT、Weight.NORMALL、Weight.LOW，默认是Normal。每个级别里面的模块之间没有优先级关系。Weight.HEIGHT模块可以确保在其他两个级别之前渲染。申明一点这里指的渲染是以用户视觉看到的来说。
+    </li>
+</ul>
+    
+
+<p>
+    <b><a href="https://github.com/Param" class="user-mention">@Param</a></b> 会自动被注入的参数，参数值来源就是action中定义的带<a href="https://github.com/Param" class="user-mention">@Param</a>参数。示例中<a href="https://github.com/Getter" class="user-mention">@Getter</a>是lombok插件的一个功能，一个参数被注释为<a href="https://github.com/Getter" class="user-mention">@Getter</a>，在编译的时候自动补全参数的getter()方法。模块中的含有getter方法和param注释的属性，都可以在ftl文件中引用。换句话说<a href="https://github.com/getter" class="user-mention">@getter</a>参数是模块的输出，对应的<a href="https://github.com/Param" class="user-mention">@Param</a>参数是模块的输入。
+</p>
+
+<p>
+    另外考虑到在模块中使用到HttpServletRequest、HttpServletResponse、ServletContext、获取cookie值等是很常用的需求。插件考虑到这一点提供了PipeSupport类，模块pipe通过继承pipeSupport可以很方便的获得这些功能的支持，类似于ActionSupport。
+</p>
+
+<p><b>4.struts.xml配置</b></p>
+
+<p>
+    示例：
+</p>
+         
+
+<pre><code>&lt;struts&gt;
+&lt;constant name="struts.objectFactory"
+          value="org.apache.struts2.spring.StrutsSpringObjectFactory"/&gt;
+&lt;constant name="struts.concurrent.plugin.downgrade"
+          value="MyPipeDowngrading"/&gt;
+&lt;constant name="struts.devMode" value="true"/&gt;
+&lt;package name="default" extends="struts-default" namespace="/"&gt;
+    &lt;result-types&gt;
+        &lt;result-type name="bigpipe" class="org.le.view.BigPipeResult"&gt;
+        &lt;/result-type&gt;
+    &lt;/result-types&gt;
+    &lt;action name="hello" class="action.IndexAction"&gt;
+        &lt;result name="success" type="freemarker"&gt;/index.ftl&lt;/result&gt;
+        &lt;result name="pipe" type="bigpipe"&gt;Pipes.PipeOne,Pipes.PipeTwo,
+            Pipes.PipeThree,Pipes.PipeFour
+        &lt;/result&gt;
+    &lt;/action&gt;
+&lt;/package&gt;
+&lt;/struts&gt;
+</code></pre>
+
+<p>
+    在中定义了一种新的resultType类型为bigpipe，然后在Action result定义中使用。示例中
+    
+        Pipes.PipeOne,Pipes.PipeTwo,
+                Pipes.PipeThree,Pipes.PipeFour
+          
+        
+result中定义了四个pipe，pipe的值为Pipe的全名。          
+
+</p>
+
+<p><b>5. action对应的ftl</b></p>
+
+<pre><code>&lt;html&gt;
+&lt;head&gt;
+    &lt;title&gt;struts2-bigpipe-plugin&lt;/title&gt;
+    &lt;meta http-equiv="Content-Type" content="text/html; charset=utf-8" /&gt;
+&lt;/head&gt;
+&lt;body&gt;
+&lt;h1&gt;${name}&lt;/h1&gt;
+&lt;table border="1"&gt;
+    &lt;tr&gt;
+        &lt;td width="25%"&gt;&lt;div id="one"&gt;${one}&lt;/div&gt;&lt;/td&gt;
+        &lt;td width="25%"&gt;&lt;div id="two"&gt;${two}&lt;/div&gt;&lt;/td&gt;
+        &lt;td width="25%"&gt;&lt;div id="three"&gt;${three}&lt;/div&gt;&lt;/td&gt;
+        &lt;td width="25%"&gt;&lt;div id="four"&gt;${four}&lt;/div&gt;&lt;/td&gt;
+    &lt;/tr&gt;
+&lt;/table&gt;
+&lt;#--&lt;/body&gt;--&gt;
+&lt;#--&lt;/html&gt;--&gt;
+</code></pre>
+
+<p>
+    示例中定义了四个模块，${key} 中定义的为pipe模块的key。
+    
+        </p><div id="one">
+        
+如果是bigpipe模式，则需要定义如上的div，id的值为pipe的key值。另外如果是bigpipe模式，则要去掉html中最后的和。框架会在全部模块都渲染完之后自动闭合html。
+
+
+<p><b>6. 框架扩展功能-模块降级</b></p>
+
+<p>
+    由于框架把页面分成很多个模块，所以当一个模块执行抛出Exception的时候，并不会影响其他模块的执行，也不会导致整个页面请求的50X响应。在调试阶段一个页面的某个模块挂掉之后，会在页面的相应的位置显示异常堆栈信息。
+</p>
+
+<p>
+    当然在线上环境的时候，肯定不容许页面某个地方显示异常信息，并且也不应该由于页面的某个模块挂掉导致整个页面挂掉。我相信大部分正式的网站都会有页面降级功能，但是毕竟页面降级代价高。为止，框架提供了一个接口用于模块降级。
+</p>
+    
+
+<pre><code>public class MyPipeDowngrading implements PipeDowngradeBackup{
+    private static Map&lt;String , Object&gt; backup = new HashMap&lt;String, Object&gt;();
+
+    @Override
+    public void backup(PipeProxy pipe, Object pipeResult) {
+        backup.put(pipe.getFtlPath(), pipeResult);
+    }
+
+    @Override
+    public Object downgrade(PipeProxy pipe) {
+        return backup.get(pipe.getFtlPath());
+    }
+}
+</code></pre>
+
+<p>
+    一共两个接口，backup(PipeProxy pipe, Object pipeResult) 每当模块渲染完之后都会调用此方法，用于备份，具体的降级策略由项目自己设定。当模块抛出异常时，则会调用Object downgrade(PipeProxy pipe)接口获取模块html，实现降级。示例中简单的用一个Map实现降级。
+</p>
+
+<p>
+在非devMode模式下，模块执行抛异常之后，如果没有设置降级或者降级为命中则不显示此模块，这样对用户来说可能不感知的。
+</p>
+
+<p>
+在struts.xml配置以下常量即可注册降级器
+
+    
+
+</p>
+
+<h3>
+<a id="结语" class="anchor" href="#%E7%BB%93%E8%AF%AD" aria-hidden="true"><span class="octicon octicon-link"></span></a>结语</h3>
+
+<hr>
+
+<p>此插件功能强大，使用起来十分方便，而且能够大幅度提高性能、用户体验，特别是bigpipe模式。并且对于页面开发可以起到页面代码解耦的功能。市面上有很多后端模块并行执行的框架，但大部分都是在struts层之下做的，多一层就多了很多的复杂度。我个人觉得这些功能应该在MVC层做的，也就是struts负责的。读者看完上面的教程之后，应该也会发现用一个struts插件实现这些功能是多么自然的事情。</p>
+
+<p>
+插件还有很多不完善的地方，特别是bigpipe js部分。由于本人对前端知识不是特别了解，所以这部分还有很多改善的空间。也借此希望如果有兴趣的TX，一块开发完善此项目。
+</p>
+</div>
+
+      <footer class="site-footer">
+        <span class="site-footer-owner"><a href="https://github.com/lepdou/struts2-concurrent-plugin">Struts2-concurrent-plugin</a> is maintained by <a href="https://github.com/lepdou">lepdou</a>.</span>
+
+        <span class="site-footer-credits">This page was generated by <a href="https://pages.github.com">GitHub Pages</a> using the <a href="https://github.com/jasonlong/cayman-theme">Cayman theme</a> by <a href="https://twitter.com/jasonlong">Jason Long</a>.</span>
+      </footer>
+
+    </section>
+
+  
+  </body>
+</html>
