@@ -7,22 +7,30 @@ import org.yaml.snakeyaml.Yaml;
 import java.io.InputStream;
 import java.io.Reader;
 
-/**
- * @author ltebean
- */
+
 public class YamlConfig {
     private static Object config;
+    private static boolean hasConfigFile;
 
     static {
         try {
             Yaml yaml = new Yaml();
-            config = yaml.load(YamlConfig.class.getClassLoader().getResourceAsStream("pipe.config"));
+            InputStream configFile = YamlConfig.class.getClassLoader().getResourceAsStream("pipe.config");
+            if (config != null){
+                hasConfigFile = true;
+                config = yaml.load(configFile);
+            }
         } catch (Exception e) {
             e.printStackTrace();
             throw new RuntimeException("init params error.please make sure has a config " +
                     "file named 【pipe.config】and put it at root resources dirctory");
         }
     }
+
+    public static boolean hasConfigFile(){
+        return hasConfigFile;
+    }
+
     public static String getAsString(String expression){
         return get(expression, String.class);
     }

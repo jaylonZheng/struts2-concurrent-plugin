@@ -5,6 +5,7 @@ import freemarker.template.Configuration;
 import freemarker.template.ObjectWrapper;
 import freemarker.template.Template;
 import freemarker.template.TemplateException;
+import org.apache.log4j.Logger;
 import org.le.Exception.FtlRenderException;
 
 import java.io.IOException;
@@ -13,6 +14,7 @@ import java.io.StringWriter;
 import java.util.Map;
 
 public class DefaultFreemarkerRenderer implements FreemarkerRenderer {
+    Logger logger = Logger.getLogger("logger");
     private static DefaultFreemarkerRenderer instance = new DefaultFreemarkerRenderer();
     private Configuration cfg;
 
@@ -37,16 +39,15 @@ public class DefaultFreemarkerRenderer implements FreemarkerRenderer {
 
     @Override
     public Object render(String ftl, Map<String, Object> context) {
+        logger.info(">> render ftl >> ");
         String renderResult = "";
         try {
             Template template = new Template(ftl, new StringReader(ftl), cfg);
             StringWriter writer = new StringWriter();
             template.process(context, writer);
             renderResult = writer.toString();
-        } catch (IOException e) {
-            throw new FtlRenderException(e);
-        } catch (TemplateException e) {
-            throw new FtlRenderException(e);
+        } catch (Exception e) {
+            logger.error(e);
         }
         return renderResult;
     }

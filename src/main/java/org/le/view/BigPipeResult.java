@@ -4,6 +4,7 @@ import com.opensymphony.xwork2.ActionContext;
 import com.opensymphony.xwork2.ActionInvocation;
 import com.opensymphony.xwork2.inject.Inject;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.log4j.Logger;
 import org.apache.struts2.ServletActionContext;
 import org.apache.struts2.dispatcher.StrutsResultSupport;
 import org.le.Exception.PipeActionAnnotationException;
@@ -44,13 +45,14 @@ import java.util.*;
  * @Author lepdou
  */
 public class BigPipeResult extends StrutsResultSupport {
+    Logger logger = Logger.getLogger("logger");
 
     private final static int RECYCLE_ASK_SLEEP_TIME = 5;
 
     private PipesParse pipesParse = DefaultPipesParse.newInstance();
     private PipeFactory pipeFactory = DefaultPipeFactory.newInstance();
     private PipeExecutor syncPipeExecutor = SyncPipeExecutor.newInstance();
-    private PipeExecutor concurrentPipeExecutor = new ConcurrentPipeExecutor();
+    private ConcurrentPipeExecutor concurrentPipeExecutor = new ConcurrentPipeExecutor();
     private PipeExecutor bigpipeExecutor = new BigPipeExecutor();
     private FreemarkerRenderer renderer = DefaultFreemarkerRenderer.newIntance();
     private BigpipeSupportStrategy bigpipeSupportStrategy = SimpleBigpipeSupport.newInstance();
@@ -79,7 +81,9 @@ public class BigPipeResult extends StrutsResultSupport {
                 doResponse(writer, executeResults);
                 break;
             case CONCURRNET:
-                executeResults.putAll(concurrentPipeExecutor.execute(pipes));
+                executeResults.putAll(concurrentPipeExecutor.execute(
+                        pipes,
+                        ViewAnnotationUtils.generateTimeout(this.action)));
                 doResponse(writer, executeResults);
                 break;
             case BIGPIPE: {
@@ -106,7 +110,7 @@ public class BigPipeResult extends StrutsResultSupport {
 
     private synchronized void initParams() {
         //double check
-        if(hasInitParams)
+        if (hasInitParams)
             return;
         initDevMode();
         hasInitParams = true;
@@ -116,6 +120,7 @@ public class BigPipeResult extends StrutsResultSupport {
         boolean devMod = false;
         if (StringUtils.isNotEmpty(devMode) && "true".equals(devMode))
             devMod = true;
+        logger.info("devMod >>" + devMode);
         ((SyncPipeExecutor) syncPipeExecutor).setDevMode(devMod);
     }
 
@@ -138,6 +143,8 @@ public class BigPipeResult extends StrutsResultSupport {
     private ExecuteType getExecuteType() {
         View view = action.getClass().getAnnotation(View.class);
         if (view == null) {
+            logger.error("struts action components must " +
+                    "have View annotation:" + action.getClass().getName());
             throw new PipeActionAnnotationException("struts action components must " +
                     "have View annotation:" + action.getClass().getName());
         }

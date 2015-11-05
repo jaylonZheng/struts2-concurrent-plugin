@@ -1,5 +1,6 @@
 package org.le.core.concurrent;
 
+import org.apache.log4j.Logger;
 import org.le.Exception.FtlRenderException;
 import org.le.Exception.PipeFtlReadExcption;
 import org.le.bean.PipeProxy;
@@ -8,12 +9,13 @@ import org.le.core.executor.SyncPipeExecutor;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 
-public class ConcurrentPipeWorker implements Callable<Object>{
+public class ConcurrentPipeWorker implements Callable<Object> {
+    private Logger logger = Logger.getLogger("logger");
     private SyncPipeExecutor syncPipeExecutor = SyncPipeExecutor.newInstance();
     private PipeProxy pipeProxy;
     private CountDownLatch latch;
 
-    public ConcurrentPipeWorker(PipeProxy pipeProxy, CountDownLatch latch){
+    public ConcurrentPipeWorker(PipeProxy pipeProxy, CountDownLatch latch) {
         this.latch = latch;
         this.pipeProxy = pipeProxy;
     }
@@ -23,12 +25,12 @@ public class ConcurrentPipeWorker implements Callable<Object>{
         try {
             return syncPipeExecutor.execute(pipeProxy);
         } catch (PipeFtlReadExcption pipeFtlReadExcption) {
-            pipeFtlReadExcption.printStackTrace();
+            logger.error(pipeProxy, pipeFtlReadExcption);
             return null;
-        } catch (FtlRenderException e) {
-            e.printStackTrace();
+        } catch (Exception e) {
+            logger.error(pipeProxy, e);
             return null;
-        }finally {
+        } finally {
             latch.countDown();
         }
     }
