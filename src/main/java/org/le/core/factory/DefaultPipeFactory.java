@@ -35,7 +35,6 @@ public class DefaultPipeFactory implements PipeFactory {
         return instance;
     }
 
-    @Override
     public PipeProxy create(String className, ActionInvocation invocation) {
         this.invocation = invocation;
         Map<String, Object> context = InjectUtils.getFieldValueWithAnnoParamFromObject(invocation.getAction());
@@ -58,7 +57,6 @@ public class DefaultPipeFactory implements PipeFactory {
             throw new PipeClassDefinationException("pipe must implements inteface Pipe :" + className);
     }
 
-    @Override
     public List<PipeProxy> create(List<String> classNames, ActionInvocation invocation) {
         List<PipeProxy> pipes = new ArrayList<PipeProxy>();
         for (String className : classNames)

@@ -1,6 +1,5 @@
 package org.le.core.executor;
 
-import org.apache.log4j.Logger;
 import org.le.Exception.PipeParamInitException;
 import org.le.bean.PipeProxy;
 import org.le.core.DefaultFreemarkerRenderer;
@@ -12,34 +11,56 @@ import org.le.core.extention.PipeDowngrade;
 import org.le.util.InjectUtils;
 import org.le.util.YamlConfig;
 import org.springframework.util.CollectionUtils;
-
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 public class SyncPipeExecutor implements PipeExecutor {
-    static Logger logger = Logger.getLogger("logger");
+
     private static SyncPipeExecutor instance = new SyncPipeExecutor();
     private FreemarkerRenderer renderer = DefaultFreemarkerRenderer.newIntance();
+   
+    public final static String DOWNGRADE_CONFIG="downgrade";
+    public final static String BACKUP_CONFIG="backup";
+    public final static String CACHE_CONFIG="cache";
+    
     private static PipeDowngrade downgrade;
     private static PipeBackup backup;
     private static PipeCache cache;
     private boolean devMode;
-
-    //初始化参数
-    static {
-        if (YamlConfig.hasConfigFile()) {
-            Map<String, String> extenInfo = new HashMap<String, String>();
-            List<String> extenKeys = Arrays.asList("downgrade", "cache", "backup");
-            for (String key : extenKeys) {
-                extenInfo.put(key, YamlConfig.getAsString(key));
-            }
-            initExtentionParam(extenInfo);
-        } else {
-            logger.info("project has not config downgrade|backup|cache class");
-        }
+    
+    public static boolean initFlag=false;
+    /**
+     * 由原来静态初识方法　改成加载函数
+     * @param configPath
+     */
+    public static void loadConfig(String configPath){
+    	if(initFlag)
+    		return;
+		try {
+	        Map<String, String> extenInfo = new HashMap<String, String>();
+	        List<String> extenKeys = Arrays.asList("downgrade", "cache", "backup");
+	        //未进行初始化
+	        if(YamlConfig.isInit()==false){
+	        	YamlConfig.load(configPath);
+	        }
+	        if(YamlConfig.getConfig()!=null)
+	            for(String key: extenKeys){
+	            	String value=YamlConfig.getAsString(key,null);
+	            	if(value!=null)
+	            		extenInfo.put(key,value);
+	            }
+	       initExtentionParam(extenInfo);
+	       initFlag=true;
+	       
+	    } catch (Exception e) {
+	        e.printStackTrace();
+	        throw new RuntimeException("");
+	    }
+		
     }
+    
 
     private static void initExtentionParam(Map<String, String> classNames) {
         if (CollectionUtils.isEmpty(classNames)) {
@@ -48,17 +69,15 @@ public class SyncPipeExecutor implements PipeExecutor {
         for (String extenType : classNames.keySet()) {
             try {
                 Class clazz = Class.forName(classNames.get(extenType));
-                logger.info("init extention plugin >> " + clazz.getName());
-                if ("downgrade".equals(extenType)) {
+                if (DOWNGRADE_CONFIG.equals(extenType)) {
                     downgrade = (PipeDowngrade) clazz.newInstance();
-                } else if ("cache".equals(extenType)) {
+                } else if (CACHE_CONFIG.equals(extenType)) {
                     cache = (PipeCache) clazz.newInstance();
-                } else if ("backup".equals(extenType)) {
+                } else if (BACKUP_CONFIG.equals(extenType)) {
                     backup = (PipeBackup) clazz.newInstance();
                 }
-
             } catch (Exception e) {
-                logger.error("init pipe cache object error!", e);
+            	e.printStackTrace();
                 throw new PipeParamInitException("init pipe cache object error!");
             }
         }
@@ -72,14 +91,11 @@ public class SyncPipeExecutor implements PipeExecutor {
         return instance;
     }
 
-    @Override
     public Object execute(PipeProxy pipe) {
         //先从cache里获取
         Object backupRenderResult = getResultFromCache(pipe);
-        if (backupRenderResult != null) {
-            logger.info("get render result from cache");
+        if (backupRenderResult != null)
             return backupRenderResult;
-        }
         try {
             pipe.execute();
             Object renderResult = render(pipe);
@@ -87,20 +103,15 @@ public class SyncPipeExecutor implements PipeExecutor {
             pipe.setRenderResult(renderResult);
             return renderResult;
         } catch (Exception e) {
-            logger.error("pipe execute error for pipe [" + pipe + "]", e);
             if (isDevMode()) {
                 return generateExceptionToPrintStack(e);
             } else {
                 if (downgrade != null) {
                     Object backupResult = downgrade.downgrade(pipe);
-                    if (backupResult != null) {
-                        logger.info("downgrade success [" + pipe +"]");
+                    if (backupResult != null)
                         return backupResult;
-                    }
-                    else {
-                        logger.info("downgrade fail [" + pipe +"]");
+                    else
                         return "";
-                    }
                 } else {
                     return "";
                 }
@@ -108,7 +119,6 @@ public class SyncPipeExecutor implements PipeExecutor {
         }
     }
 
-    @Override
     public Map<String, Object> execute(List<PipeProxy> pipes) {
         Map<String, Object> result = new HashMap<String, Object>();
         for (PipeProxy pipe : pipes)
@@ -123,10 +133,8 @@ public class SyncPipeExecutor implements PipeExecutor {
     }
 
     private void backup(PipeProxy pipe, Object renderResult) {
-        if (backup != null) {
-            logger.info("backup pipe[" + pipe + "]");
+        if (backup != null)
             backup.backup(pipe, renderResult);
-        }
     }
 
     private Object render(PipeProxy pipe) {

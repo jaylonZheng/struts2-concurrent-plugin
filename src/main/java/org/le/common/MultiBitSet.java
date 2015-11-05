@@ -376,40 +376,40 @@ public class MultiBitSet implements Serializable {
         return nextClearBit;
     }
 
-//    /**
-//     * Returns the index of the nearest bit that is set to {@code false}
-//     * that occurs on or before the specified starting index.
-//     * If no such bit exists, or if {@code -1} is given as the
-//     * starting index, then {@code -1} is returned.
-//     *
-//     * @param fromIndex the index to start checking from (inclusive)
-//     * @return the index of the previous clear bit, or {@code -1} if there
-//     * is no such bit
-//     * @throws IndexOutOfBoundsException if the specified index is less
-//     *                                   than {@code -1}
-//     */
-//    public int previousClearBit(int fromIndex) {
-//        checkIndex(fromIndex);
-//        int previousClearBit = -1;
-//        int minClearBitIndex = Integer.MAX_VALUE;
-//        //获取最低位0
-//        for (BitSet bitset : bitSets)
-//            minClearBitIndex = Math.min(minClearBitIndex, bitset.previousClearBit(fromIndex));
-//        for (int i = minClearBitIndex; i >= 0; i++) {
-//            boolean hasFound = true;
-//            for (BitSet bitset : bitSets)
-//                if (bitset.get(i)) {
-//                    hasFound = false;
-//                    break;
-//                }
-//            if (hasFound) {
-//                previousClearBit = i;
-//                break;
-//            }
-//        }
-//        return previousClearBit;
-//
-//    }
+    /**
+     * Returns the index of the nearest bit that is set to {@code false}
+     * that occurs on or before the specified starting index.
+     * If no such bit exists, or if {@code -1} is given as the
+     * starting index, then {@code -1} is returned.
+     *
+     * @param fromIndex the index to start checking from (inclusive)
+     * @return the index of the previous clear bit, or {@code -1} if there
+     * is no such bit
+     * @throws IndexOutOfBoundsException if the specified index is less
+     *                                   than {@code -1}
+     */
+    public int previousClearBit(int fromIndex) {
+        checkIndex(fromIndex);
+        int previousClearBit = -1;
+        int minClearBitIndex = Integer.MAX_VALUE;
+        //获取最低位0
+        for (BitSet bitset : bitSets)
+            minClearBitIndex = Math.min(minClearBitIndex, bitset.previousClearBit(fromIndex));
+        for (int i = minClearBitIndex; i >= 0; i++) {
+            boolean hasFound = true;
+            for (BitSet bitset : bitSets)
+                if (bitset.get(i)) {
+                    hasFound = false;
+                    break;
+                }
+            if (hasFound) {
+                previousClearBit = i;
+                break;
+            }
+        }
+        return previousClearBit;
+
+    }
 
     /**
      * Returns the index of the nearest bit that is set to {@code true}
@@ -431,21 +431,21 @@ public class MultiBitSet implements Serializable {
      * @throws IndexOutOfBoundsException if the specified index is less
      *                                   than {@code -1}
      */
-//    public int previousSetBit(int fromIndex) {
-//        checkIndex(fromIndex);
-//        int previousSetBit = -1;
-//        int temp = -1;
-//        for (BitSet bitset : bitSets) {
-//            temp = bitset.previousSetBit(fromIndex);
-//            if (temp == fromIndex) {
-//                previousSetBit = temp;
-//                break;
-//            }
-//            if (temp > 0)
-//                previousSetBit = temp > previousSetBit ? temp : previousSetBit;
-//        }
-//        return previousSetBit;
-//    }
+    public int previousSetBit(int fromIndex) {
+        checkIndex(fromIndex);
+        int previousSetBit = -1;
+        int temp = -1;
+        for (BitSet bitset : bitSets) {
+            temp = bitset.previousSetBit(fromIndex);
+            if (temp == fromIndex) {
+                previousSetBit = temp;
+                break;
+            }
+            if (temp > 0)
+                previousSetBit = temp > previousSetBit ? temp : previousSetBit;
+        }
+        return previousSetBit;
+    }
 
     /**
      * Returns the number of bits of space actually in use by this

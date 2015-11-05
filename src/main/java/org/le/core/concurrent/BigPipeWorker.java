@@ -16,7 +16,6 @@ public class BigPipeWorker implements Runnable {
         this.renderResult = renderResult;
     }
 
-    @Override
     public void run() {
             Object result = syncPipeExecutor.execute(pipeProxy);
             //构造script输出

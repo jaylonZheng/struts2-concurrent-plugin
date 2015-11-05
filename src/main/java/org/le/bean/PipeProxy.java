@@ -97,9 +97,4 @@ public class PipeProxy {
     public void setRenderResult(Object renderResult) {
         this.renderResult = renderResult;
     }
-
-    @Override
-    public String toString() {
-        return pipeName;
-    }
 }

@@ -20,7 +20,6 @@ public class ThreadPoolExecutorFactoryImpl implements ThreadPoolExecutorFactory 
         return instance;
     }
 
-    @Override
     public ThreadPoolExecutor instanceOfDefaultConfig() {
         return executor;
     }

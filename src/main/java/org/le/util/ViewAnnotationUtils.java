@@ -71,13 +71,4 @@ public class ViewAnnotationUtils {
         ftlCache.add(ftlPath, ftl);
         return ftl;
     }
-
-    public static int generateTimeout(Object o){
-        View view = o.getClass().getAnnotation(View.class);
-        if(view == null){
-            throw new PipeActionAnnotationException("pipe components must " +
-                    "have View annotation:" + o.getClass().getName());
-        }
-        return view.timeout();
-    }
 }

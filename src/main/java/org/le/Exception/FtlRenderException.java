@@ -1,6 +1,6 @@
 package org.le.Exception;
 
-public class FtlRenderException extends Exception{
+public class FtlRenderException extends RuntimeException{
     public FtlRenderException(String message){
         super(message);
     }

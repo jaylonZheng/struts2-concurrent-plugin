@@ -24,7 +24,6 @@ public class SimpleBigpipeSupport implements BigpipeSupportStrategy {
             "        }\n" +
             "    </script>";
 
-    @Override
     public String execute(String html) {
         List<String> tags = Arrays.asList("</head>", "</title>");
         String result = null;

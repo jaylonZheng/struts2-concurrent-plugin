@@ -17,14 +17,12 @@ public class SimpleMemaryCache implements Cache {
         return instance;
     }
 
-    @Override
     public void add(String key, Object value) {
         if (StringUtils.isEmpty(key))
             return;
         cache.put(key, value);
     }
 
-    @Override
     public Object get(String key) {
         return cache.get(key);
     }

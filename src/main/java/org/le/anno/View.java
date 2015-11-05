@@ -37,10 +37,4 @@ public @interface View {
      */
     Weight weight() default Weight.NORMALL;
 
-    /**
-     * 在后端并发模式下，整个页面可以设置超时时间,单位毫秒
-     * @return
-     */
-    int timeout() default Integer.MAX_VALUE;
-
 }
