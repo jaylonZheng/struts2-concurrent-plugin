@@ -50,20 +50,22 @@ public class YamlConfig {
     }    
     /**
      * 根据制定的配置文件路径，加载降级配置文件．
-     * １.如果文件名为null,表示用户没有设置该内容
+     * １.如果文件名为null,表示用户没有设置该内容.则看是否在类路径下存在pipe.config.
      * ２.如果文件名长度为０，抛出异常
      * ３．如果找不到文件路径，抛出异常
-     * ４．加载成功后则验证文件内容，如果　backup和cache不是同时出现或同时没有则报错
+     * ４．加载成功后则验证文件内容，即要求　backup和cache要么同时出现要么都不出现．否则报错
      * 
      * @param pipeConfigPath
      * @return　null if can't find
      */
     public static  Object load(String pipeConfigPath){
-    	//用户没有设置该值
-    	if(pipeConfigPath==null)
-    		return null;
     	
-    	if(pipeConfigPath.trim().length()==0)
+    	if(pipeConfigPath == null)
+    	{//用户没有设置该值,则看是否在类路径下存在pipe.config
+    		return load("pipe.config");
+    	}
+    	
+    	if(pipeConfigPath.trim().length() == 0)
     		throw new RuntimeException("value of struts.concurrent.plugin.configPath　shouldn't be blank");    
     	
     	/*File temp=new File(pipeConfigPath);
@@ -90,12 +92,12 @@ public class YamlConfig {
     }
 
     private static boolean validationOfContent(Object config2,String pipeConfigPath) {
-		String backup=getAsString(SyncPipeExecutor.BACKUP_CONFIG,null);
-		String cache=getAsString(SyncPipeExecutor.CACHE_CONFIG,null);
+		String backup = getAsString("backup",null);
+		String cache = getAsString("cache",null);
 		
-		if(backup!=null && cache==null)
+		if(backup != null && cache == null)
 			throw new RuntimeException("cache could't be null when backup have value. please set value of cache in 【"+pipeConfigPath+"】");
-		if(backup==null && cache!=null)
+		if(backup == null && cache != null)
 			throw new RuntimeException("backup could't be null when cache have value. please set value of backup in 【"+pipeConfigPath+"】"); 
 		return true;
 	}
@@ -107,7 +109,7 @@ public class YamlConfig {
         return get(expression,defaultValue, String.class);
     }
     public static <T> T get(String expression, Class<T> clazz) {
-    	if(config==null)
+    	if(config == null)
     		return null;
         try {
             final Object ognlTree = Ognl.parseExpression(expression);

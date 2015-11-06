@@ -19,18 +19,14 @@ import java.util.Map;
 public class SyncPipeExecutor implements PipeExecutor {
 
     private static SyncPipeExecutor instance = new SyncPipeExecutor();
-    private FreemarkerRenderer renderer = DefaultFreemarkerRenderer.newIntance();
-   
-    public final static String DOWNGRADE_CONFIG="downgrade";
-    public final static String BACKUP_CONFIG="backup";
-    public final static String CACHE_CONFIG="cache";
-    
+    private FreemarkerRenderer renderer = DefaultFreemarkerRenderer.newIntance(); 
     private static PipeDowngrade downgrade;
     private static PipeBackup backup;
     private static PipeCache cache;
     private boolean devMode;
     
-    public static boolean initFlag=false;
+    public static volatile boolean initFlag = false;
+    
     /**
      * 由原来静态初识方法　改成加载函数
      * @param configPath
@@ -38,30 +34,33 @@ public class SyncPipeExecutor implements PipeExecutor {
     public static void loadConfig(String configPath){
     	if(initFlag)
     		return;
-		try {
+    	doLoadConfig(configPath);
+    }
+    public static synchronized void doLoadConfig(String configPath){
+    	if(initFlag)
+    		return;
+    	try {
 	        Map<String, String> extenInfo = new HashMap<String, String>();
 	        List<String> extenKeys = Arrays.asList("downgrade", "cache", "backup");
 	        //未进行初始化
-	        if(YamlConfig.isInit()==false){
+	        if(YamlConfig.isInit() == false){
 	        	YamlConfig.load(configPath);
 	        }
-	        if(YamlConfig.getConfig()!=null)
+	        if(YamlConfig.getConfig() != null)
 	            for(String key: extenKeys){
-	            	String value=YamlConfig.getAsString(key,null);
-	            	if(value!=null)
+	            	String value = YamlConfig.getAsString(key,null);
+	            	if(value != null)
 	            		extenInfo.put(key,value);
 	            }
 	       initExtentionParam(extenInfo);
 	       initFlag=true;
-	       
 	    } catch (Exception e) {
 	        e.printStackTrace();
 	        throw new RuntimeException("");
 	    }
-		
+    	
     }
     
-
     private static void initExtentionParam(Map<String, String> classNames) {
         if (CollectionUtils.isEmpty(classNames)) {
             return;
@@ -69,11 +68,11 @@ public class SyncPipeExecutor implements PipeExecutor {
         for (String extenType : classNames.keySet()) {
             try {
                 Class clazz = Class.forName(classNames.get(extenType));
-                if (DOWNGRADE_CONFIG.equals(extenType)) {
+                if ("downgrade".equals(extenType)) {
                     downgrade = (PipeDowngrade) clazz.newInstance();
-                } else if (CACHE_CONFIG.equals(extenType)) {
+                } else if ("cache".equals(extenType)) {
                     cache = (PipeCache) clazz.newInstance();
-                } else if (BACKUP_CONFIG.equals(extenType)) {
+                } else if ("backup".equals(extenType)) {
                     backup = (PipeBackup) clazz.newInstance();
                 }
             } catch (Exception e) {
